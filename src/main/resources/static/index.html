@@ -41,13 +41,26 @@
 
             <div class="form-group">
                 <label>후보 날짜</label>
-                <div id="datesContainer" class="dates-container">
-                    <div class="date-input-group">
-                        <input type="date" class="date-input" required>
-                        <button type="button" class="btn btn-danger btn-sm" onclick="removeDate(this)">삭제</button>
+                <div class="cal-widget" id="adminCalWidget">
+                    <div class="cal-header">
+                        <button type="button" class="cal-nav-btn" onclick="calPrevMonth()">&#8249;</button>
+                        <div class="cal-header-title" id="calHeaderTitle"></div>
+                        <button type="button" class="cal-nav-btn" onclick="calNextMonth()">&#8250;</button>
                     </div>
+                    <div class="cal-weekdays">
+                        <div class="cal-weekday">일</div>
+                        <div class="cal-weekday">월</div>
+                        <div class="cal-weekday">화</div>
+                        <div class="cal-weekday">수</div>
+                        <div class="cal-weekday">목</div>
+                        <div class="cal-weekday">금</div>
+                        <div class="cal-weekday">토</div>
+                    </div>
+                    <div class="cal-grid" id="adminCalGrid"></div>
                 </div>
-                <button type="button" class="btn btn-secondary btn-sm" onclick="addDate()" style="margin-top:0.5rem;">+ 날짜 추가</button>
+                <div class="selected-dates-summary" id="selectedDatesSummary">
+                    <span style="color:var(--gray-400);font-size:0.85rem;">날짜를 클릭해 선택하세요</span>
+                </div>
             </div>
 
             <button class="btn btn-primary btn-lg" onclick="createSchedule()">약속 만들기</button>

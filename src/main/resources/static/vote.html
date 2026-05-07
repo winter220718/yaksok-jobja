@@ -39,19 +39,13 @@
             </div>
 
             <div class="card">
-                <p style="color:var(--gray-600);margin-bottom:1.25rem;font-size:0.9rem;">각 날짜에 참여 가능 여부를 선택해주세요</p>
-                <div class="calendar-wrapper" style="margin:0 0 1.5rem;">
-                    <table class="calendar-table">
-                        <thead>
-                            <tr>
-                                <th>날짜</th>
-                                <th>참여 가능 여부</th>
-                            </tr>
-                        </thead>
-                        <tbody id="calendarBody"></tbody>
-                    </table>
-                </div>
-                <button class="btn btn-primary btn-lg" onclick="submitVotes()">투표 제출하기</button>
+                <p style="color:var(--gray-600);margin-bottom:1.25rem;font-size:0.9rem;">
+                    가능한 날짜를 클릭하세요 &nbsp;
+                    <span style="color:var(--success);font-weight:600;">● 초록 = 참여 가능</span> &nbsp;
+                    <span style="color:var(--primary);font-weight:600;">● 보라 = 선택 안 함 (불가능)</span>
+                </p>
+                <div id="voteCalendars"></div>
+                <button class="btn btn-primary btn-lg" style="margin-top:1.5rem;" onclick="submitVotes()">투표 제출하기</button>
             </div>
         </div>
 

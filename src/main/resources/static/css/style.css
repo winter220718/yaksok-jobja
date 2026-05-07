@@ -499,89 +499,200 @@ body {
 }
 
 /* ======================================
-   달력 테이블
+   달력 UI (공통)
    ====================================== */
 
-.calendar-wrapper {
-    overflow-x: auto;
-    margin: 1.5rem 0;
+.cal-widget {
+    border: 1.5px solid var(--gray-200);
     border-radius: var(--radius);
-    box-shadow: var(--shadow-sm);
-    border: 1px solid var(--gray-200);
-}
-
-.calendar-table {
-    width: 100%;
-    border-collapse: collapse;
+    overflow: hidden;
     background: white;
 }
 
-.calendar-table thead {
+.cal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
     background: var(--primary);
     color: white;
 }
 
-.calendar-table th {
-    padding: 1rem 1.25rem;
-    text-align: left;
-    font-size: 0.9rem;
-    font-weight: 600;
-    letter-spacing: 0.02em;
+.cal-header-title {
+    font-size: 1rem;
+    font-weight: 700;
 }
 
-.calendar-table td {
-    padding: 1rem 1.25rem;
-    border-bottom: 1px solid var(--gray-100);
-}
-
-.calendar-table tbody tr:last-child td {
-    border-bottom: none;
-}
-
-.calendar-table tbody tr:hover {
-    background: var(--gray-50);
-}
-
-.date-cell {
-    font-weight: 600;
-    color: var(--primary);
-    white-space: nowrap;
-}
-
-.vote-buttons {
-    display: flex;
-    gap: 0.5rem;
-}
-
-.vote-btn {
-    flex: 1;
-    padding: 0.6rem 1rem;
-    border: 1.5px solid var(--gray-200);
+.cal-nav-btn {
+    background: rgba(255,255,255,0.2);
+    border: none;
+    color: white;
+    width: 32px;
+    height: 32px;
     border-radius: 6px;
+    font-size: 1.1rem;
     cursor: pointer;
-    transition: all 0.2s;
-    font-weight: 600;
-    font-size: 0.85rem;
-    background: white;
-    color: var(--gray-400);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+    line-height: 1;
     font-family: inherit;
 }
 
-.vote-btn:hover {
-    border-color: var(--primary);
+.cal-nav-btn:hover {
+    background: rgba(255,255,255,0.35);
+}
+
+.cal-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    background: var(--primary-light);
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.cal-weekday {
+    padding: 0.5rem 0;
+    text-align: center;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--gray-600);
+}
+
+.cal-weekday:first-child { color: var(--danger); }
+.cal-weekday:last-child { color: var(--primary); }
+
+.cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 1px;
+    background: var(--gray-200);
+}
+
+.cal-cell {
+    background: white;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cal-day {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 0.9rem;
+    transition: all 0.15s;
+    font-weight: 500;
+    user-select: none;
+}
+
+.cal-day.other-month {
+    color: var(--gray-400);
+    cursor: default;
+}
+
+.cal-day.today {
+    font-weight: 700;
+    border: 2px solid var(--primary);
     color: var(--primary);
 }
 
-.vote-btn.available {
-    background: var(--success);
-    color: white;
-    border-color: var(--success);
+/* 관리자 달력 - 선택된 날짜 */
+.cal-day.selectable {
+    cursor: pointer;
 }
 
-.vote-btn.unavailable {
-    background: var(--danger);
+.cal-day.selectable:hover {
+    background: var(--primary-light);
+    color: var(--primary);
+}
+
+.cal-day.selected {
+    background: var(--primary);
     color: white;
-    border-color: var(--danger);
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.cal-day.selected:hover {
+    background: var(--primary-dark);
+}
+
+/* 투표 달력 - 후보 날짜 (관리자가 선택한 날짜) */
+.cal-day.candidate {
+    background: var(--primary-light);
+    color: var(--primary);
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.cal-day.candidate:hover {
+    background: var(--primary);
+    color: white;
+}
+
+/* 투표 달력 - 참여 가능으로 선택한 날짜 */
+.cal-day.available {
+    background: var(--success);
+    color: white;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.cal-day.available:hover {
+    background: #0EA572;
+}
+
+/* 투표 달력 - 후보가 아닌 날짜 */
+.cal-day.non-candidate {
+    cursor: default;
+    color: var(--gray-400);
+}
+
+/* 선택된 날짜 태그 목록 */
+.selected-dates-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 0.75rem;
+    min-height: 1.75rem;
+}
+
+.date-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    background: var(--primary-light);
+    color: var(--primary);
+    border: 1px solid var(--primary);
+    padding: 0.25rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.date-tag .remove-tag {
+    cursor: pointer;
+    opacity: 0.6;
+    font-size: 1rem;
+    line-height: 1;
+}
+
+.date-tag .remove-tag:hover {
+    opacity: 1;
+}
+
+/* 투표 월별 블록 */
+.vote-month-block {
+    margin-bottom: 1.5rem;
+}
+
+.vote-month-block:last-child {
+    margin-bottom: 0;
 }
 
 /* ======================================

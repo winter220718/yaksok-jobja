@@ -2,6 +2,109 @@ const API_BASE_URL = '/api';
 let createdSchedule = null;
 
 /* ======================================
+   달력 상태
+   ====================================== */
+
+let selectedDates = new Set();
+let calYear, calMonth;
+
+$(document).ready(function() {
+    const now = new Date();
+    calYear = now.getFullYear();
+    calMonth = now.getMonth();
+    renderAdminCalendar();
+});
+
+function renderAdminCalendar() {
+    $('#calHeaderTitle').text(calYear + '년 ' + (calMonth + 1) + '월');
+
+    const grid = $('#adminCalGrid');
+    grid.empty();
+
+    const firstDay = new Date(calYear, calMonth, 1).getDay();
+    const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+    const prevDays = new Date(calYear, calMonth, 0).getDate();
+    const todayStr = formatDateStr(new Date());
+
+    for (let i = firstDay - 1; i >= 0; i--) {
+        grid.append('<div class="cal-cell"><div class="cal-day other-month">' + (prevDays - i) + '</div></div>');
+    }
+
+    for (let d = 1; d <= daysInMonth; d++) {
+        const ds = calYear + '-' + pad2(calMonth + 1) + '-' + pad2(d);
+        const isSelected = selectedDates.has(ds);
+        const isToday = ds === todayStr;
+        let cls = 'cal-day';
+        if (isSelected) {
+            cls += ' selected';
+        } else if (isToday) {
+            cls += ' today selectable';
+        } else {
+            cls += ' selectable';
+        }
+        grid.append(
+            '<div class="cal-cell">' +
+                '<div class="' + cls + '" onclick="toggleDate(\'' + ds + '\')">' + d + '</div>' +
+            '</div>'
+        );
+    }
+
+    const total = firstDay + daysInMonth;
+    const remaining = total % 7 === 0 ? 0 : 7 - (total % 7);
+    for (let d = 1; d <= remaining; d++) {
+        grid.append('<div class="cal-cell"><div class="cal-day other-month">' + d + '</div></div>');
+    }
+
+    updateSelectedDatesSummary();
+}
+
+function toggleDate(ds) {
+    if (selectedDates.has(ds)) {
+        selectedDates.delete(ds);
+    } else {
+        selectedDates.add(ds);
+    }
+    renderAdminCalendar();
+}
+
+function removeSelectedDate(ds) {
+    selectedDates.delete(ds);
+    renderAdminCalendar();
+}
+
+function updateSelectedDatesSummary() {
+    const container = $('#selectedDatesSummary');
+    container.empty();
+    const sorted = Array.from(selectedDates).sort();
+    if (sorted.length === 0) {
+        container.html('<span style="color:var(--gray-400);font-size:0.85rem;">날짜를 클릭해 선택하세요</span>');
+        return;
+    }
+    sorted.forEach(function(ds) {
+        const d = new Date(ds + 'T00:00:00');
+        const label = (d.getMonth() + 1) + '/' + d.getDate() + ' (' + ['일','월','화','수','목','금','토'][d.getDay()] + ')';
+        container.append(
+            '<span class="date-tag">' +
+                label +
+                '<span class="remove-tag" onclick="removeSelectedDate(\'' + ds + '\')">&times;</span>' +
+            '</span>'
+        );
+    });
+}
+
+function calPrevMonth() {
+    calMonth--;
+    if (calMonth < 0) { calMonth = 11; calYear--; }
+    renderAdminCalendar();
+}
+
+function calNextMonth() {
+    calMonth++;
+    if (calMonth > 11) { calMonth = 0; calYear++; }
+    renderAdminCalendar();
+}
+
+/* ======================================
    약속 만들기
    ====================================== */
 
@@ -16,11 +119,7 @@ function createSchedule() {
     });
     if (members.length === 0) { showToast('멤버를 최소 1명 입력해주세요', 'error'); return; }
 
-    const dates = [];
-    $('.date-input').each(function() {
-        const v = $(this).val();
-        if (v) dates.push(v);
-    });
+    const dates = Array.from(selectedDates).sort();
     if (dates.length === 0) { showToast('후보 날짜를 최소 1개 선택해주세요', 'error'); return; }
 
     $.ajax({
@@ -61,7 +160,8 @@ function resetForm() {
     $('#resultSection').addClass('hidden');
     $('#scheduleTitle').val('');
     resetMemberInputs();
-    resetDateInputs();
+    selectedDates = new Set();
+    renderAdminCalendar();
     createdSchedule = null;
 }
 
@@ -96,38 +196,14 @@ function resetMemberInputs() {
 }
 
 /* ======================================
-   날짜 입력 관리
+   유틸리티
    ====================================== */
 
-function addDate() {
-    $('#datesContainer').append(
-        '<div class="date-input-group">' +
-            '<input type="date" class="date-input">' +
-            '<button type="button" class="btn btn-danger btn-sm" onclick="removeDate(this)">삭제</button>' +
-        '</div>'
-    );
-}
+function pad2(n) { return n < 10 ? '0' + n : String(n); }
 
-function removeDate(btn) {
-    if ($('.date-input').length > 1) {
-        $(btn).parent().remove();
-    } else {
-        showToast('날짜는 최소 1개이어야 합니다', 'error');
-    }
+function formatDateStr(d) {
+    return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
 }
-
-function resetDateInputs() {
-    $('#datesContainer').html(
-        '<div class="date-input-group">' +
-            '<input type="date" class="date-input">' +
-            '<button type="button" class="btn btn-danger btn-sm" onclick="removeDate(this)">삭제</button>' +
-        '</div>'
-    );
-}
-
-/* ======================================
-   토스트
-   ====================================== */
 
 function showToast(message, type) {
     type = type || 'info';

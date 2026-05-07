@@ -1,7 +1,7 @@
 const API_BASE_URL = '/api';
 let currentSchedule = null;
 let selectedMember = null;
-let userVotes = {};
+let availableDates = new Set();
 
 $(document).ready(function() {
     const code = getURLParam('code');
@@ -59,7 +59,6 @@ function renderMemberSelect() {
         });
     }
 
-    /* 결과 보기 버튼 */
     container.append(
         '<div style="grid-column:1/-1;text-align:center;margin-top:1rem;">' +
             '<button class="btn btn-secondary btn-sm" onclick="loadAndShowResults()">📊 현재 결과 보기</button>' +
@@ -71,12 +70,12 @@ function renderMemberSelect() {
 
 function selectMember(name) {
     selectedMember = name;
-    userVotes = {};
+    availableDates = new Set();
 
     $('#voteTitleDisplay').text(currentSchedule.title);
     $('#voteNameDisplay').text(name + '님의 투표');
 
-    renderVoteTable();
+    renderVoteCalendars();
 
     $('#memberSelectSection').addClass('hidden');
     $('#resultSection').addClass('hidden');
@@ -85,40 +84,86 @@ function selectMember(name) {
 
 function backToMemberSelect() {
     selectedMember = null;
-    userVotes = {};
+    availableDates = new Set();
     $('#voteSection').addClass('hidden');
     $('#resultSection').addClass('hidden');
     $('#memberSelectSection').removeClass('hidden');
 }
 
 /* ======================================
-   투표 테이블
+   투표 달력
    ====================================== */
 
-function renderVoteTable() {
-    const tbody = $('#calendarBody');
-    tbody.empty();
-
+function renderVoteCalendars() {
+    const months = {};
     currentSchedule.dates.forEach(function(dateInfo) {
-        const row =
-            '<tr>' +
-                '<td class="date-cell">' + formatDate(dateInfo.date) + '</td>' +
-                '<td>' +
-                    '<div class="vote-buttons">' +
-                        '<button class="vote-btn" data-date-id="' + dateInfo.dateId + '" data-available="true" onclick="setVote(this, ' + dateInfo.dateId + ', true)">✓ 가능</button>' +
-                        '<button class="vote-btn" data-date-id="' + dateInfo.dateId + '" data-available="false" onclick="setVote(this, ' + dateInfo.dateId + ', false)">✗ 불가능</button>' +
-                    '</div>' +
-                '</td>' +
-            '</tr>';
-        tbody.append(row);
+        const ym = dateInfo.date.substring(0, 7);
+        if (!months[ym]) months[ym] = [];
+        months[ym].push(dateInfo);
+    });
+
+    const container = $('#voteCalendars');
+    container.empty();
+
+    Object.keys(months).sort().forEach(function(ym) {
+        const parts = ym.split('-');
+        const year = parseInt(parts[0]);
+        const monthIdx = parseInt(parts[1]) - 1;
+        container.append(renderVoteMonth(year, monthIdx, months[ym]));
     });
 }
 
-function setVote(btn, dateId, isAvailable) {
-    const group = $(btn).closest('td').find('.vote-buttons');
-    group.find('.vote-btn').removeClass('available unavailable');
-    $(btn).addClass(isAvailable ? 'available' : 'unavailable');
-    userVotes[dateId] = isAvailable;
+function renderVoteMonth(year, monthIdx, candidateDateInfos) {
+    const candidateSet = {};
+    candidateDateInfos.forEach(function(di) { candidateSet[di.date] = di.dateId; });
+
+    const monthName = year + '년 ' + (monthIdx + 1) + '월';
+    const firstDay = new Date(year, monthIdx, 1).getDay();
+    const daysInMonth = new Date(year, monthIdx + 1, 0).getDate();
+    const prevDays = new Date(year, monthIdx, 0).getDate();
+
+    const weekdaysHtml = ['일','월','화','수','목','금','토'].map(function(d) {
+        return '<div class="cal-weekday">' + d + '</div>';
+    }).join('');
+
+    let cells = '';
+
+    for (let i = firstDay - 1; i >= 0; i--) {
+        cells += '<div class="cal-cell"><div class="cal-day other-month">' + (prevDays - i) + '</div></div>';
+    }
+
+    for (let d = 1; d <= daysInMonth; d++) {
+        const ds = year + '-' + pad2(monthIdx + 1) + '-' + pad2(d);
+        if (candidateSet[ds] !== undefined) {
+            const cls = 'cal-day ' + (availableDates.has(ds) ? 'available' : 'candidate');
+            cells += '<div class="cal-cell"><div class="' + cls + '" onclick="toggleVoteDate(\'' + ds + '\')">' + d + '</div></div>';
+        } else {
+            cells += '<div class="cal-cell"><div class="cal-day non-candidate">' + d + '</div></div>';
+        }
+    }
+
+    const total = firstDay + daysInMonth;
+    const remaining = total % 7 === 0 ? 0 : 7 - (total % 7);
+    for (let d = 1; d <= remaining; d++) {
+        cells += '<div class="cal-cell"><div class="cal-day other-month">' + d + '</div></div>';
+    }
+
+    return '<div class="vote-month-block">' +
+        '<div class="cal-widget">' +
+            '<div class="cal-header"><div class="cal-header-title" style="margin:0 auto;">' + monthName + '</div></div>' +
+            '<div class="cal-weekdays">' + weekdaysHtml + '</div>' +
+            '<div class="cal-grid">' + cells + '</div>' +
+        '</div>' +
+    '</div>';
+}
+
+function toggleVoteDate(ds) {
+    if (availableDates.has(ds)) {
+        availableDates.delete(ds);
+    } else {
+        availableDates.add(ds);
+    }
+    renderVoteCalendars();
 }
 
 /* ======================================
@@ -128,11 +173,6 @@ function setVote(btn, dateId, isAvailable) {
 function submitVotes() {
     if (!selectedMember) return;
 
-    if (Object.keys(userVotes).length !== currentSchedule.dates.length) {
-        showToast('모든 날짜에 투표해주세요', 'error');
-        return;
-    }
-
     const requests = currentSchedule.dates.map(function(dateInfo) {
         return $.ajax({
             url: API_BASE_URL + '/vote/submit',
@@ -141,7 +181,7 @@ function submitVotes() {
             data: JSON.stringify({
                 dateId: dateInfo.dateId,
                 userName: selectedMember,
-                isAvailable: userVotes[dateInfo.dateId]
+                isAvailable: availableDates.has(dateInfo.date)
             })
         });
     });
@@ -222,6 +262,8 @@ function renderResults(result) {
 /* ======================================
    유틸리티
    ====================================== */
+
+function pad2(n) { return n < 10 ? '0' + n : String(n); }
 
 function formatDate(dateString) {
     const d = new Date(dateString + 'T00:00:00');

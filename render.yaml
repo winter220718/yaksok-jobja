@@ -1,0 +1,42 @@
+services:
+  - type: web
+    name: schedule-vote
+    runtime: docker
+    region: singapore
+    plan: free
+
+    /* 환경 변수 */
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+
+      - key: DATABASE_URL
+        fromDatabase:
+          name: schedule-vote-db
+          property: connectionString
+
+      - key: DATABASE_USER
+        fromDatabase:
+          name: schedule-vote-db
+          property: user
+
+      - key: DATABASE_PASSWORD
+        fromDatabase:
+          name: schedule-vote-db
+          property: password
+
+      - key: JWT_SECRET_KEY
+        generateValue: true
+
+      - key: JWT_EXPIRATION_MS
+        value: "86400000"
+
+      - key: PORT
+        value: "8080"
+
+/* 데이터베이스 - Azure SQL 또는 외부 MSSQL 사용 */
+databases:
+  - name: schedule-vote-db
+    engine: mssql
+    version: "2019"
+    plan: free

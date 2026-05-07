@@ -1,0 +1,50 @@
+# Maven
+target/
+*.class
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+*.iml
+
+# Spring Boot
+application-local.properties
+.env
+.env.local
+.env.*.local
+
+# Database
+*.db
+*.sqlite
+*.h2.db
+
+# Logs
+logs/
+*.log
+
+# Build
+bin/
+build/
+out/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Node (프론트엔드 빌드)
+node_modules/
+npm-debug.log
+dist/
+
+# 보안 (dev는 실제 비밀번호 포함 → git 제외)
+src/main/resources/application-dev.properties

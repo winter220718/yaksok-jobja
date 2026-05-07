@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>관리자 페이지</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        .admin-table { width:100%; border-collapse:collapse; background:white; border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow-sm); }
+        .admin-table th { background:var(--gray-800); color:white; padding:0.85rem 1rem; text-align:left; font-size:0.85rem; font-weight:600; letter-spacing:0.03em; }
+        .admin-table td { padding:0.85rem 1rem; border-bottom:1px solid var(--gray-100); font-size:0.9rem; vertical-align:middle; }
+        .admin-table tr:last-child td { border-bottom:none; }
+        .admin-table tr:hover td { background:var(--gray-50); }
+        .badge-list { display:flex; flex-wrap:wrap; gap:0.3rem; }
+        .badge { display:inline-block; padding:0.2rem 0.55rem; border-radius:999px; font-size:0.78rem; font-weight:500; background:var(--primary-light); color:var(--primary); }
+        .code-cell { font-family:monospace; font-weight:700; color:var(--primary); font-size:0.95rem; }
+
+        /* 수정 모달 */
+        .edit-modal { display:none; position:fixed; inset:0; background:rgba(15,23,42,0.45); z-index:500; align-items:center; justify-content:center; backdrop-filter:blur(2px); }
+        .edit-modal.open { display:flex; }
+        .edit-modal-box { background:white; border-radius:16px; padding:2rem; width:90%; max-width:520px; box-shadow:var(--shadow-lg); animation:modalIn 0.2s ease-out; max-height:90vh; overflow-y:auto; }
+        .member-edit-row { display:flex; gap:0.5rem; margin-bottom:0.5rem; align-items:center; }
+        .member-edit-row input { flex:1; padding:0.6rem 0.9rem; border:1.5px solid var(--gray-200); border-radius:var(--radius-sm); font-size:0.9rem; font-family:inherit; }
+        .member-edit-row input:focus { outline:none; border-color:var(--primary); }
+        .section-divider { border:none; border-top:1px solid var(--gray-100); margin:1.25rem 0; }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-brand">🔧 관리자 페이지</div>
+        <a href="index.html" class="nav-link">← 홈</a>
+    </nav>
+
+    <main class="main-content">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;">
+            <div class="section-title" style="margin:0;">📋 전체 약속 목록</div>
+            <button class="btn btn-secondary btn-sm" onclick="loadSchedules()">🔄 새로고침</button>
+        </div>
+
+        <div id="loadingMsg" style="text-align:center;padding:3rem;color:var(--gray-400);">불러오는 중...</div>
+
+        <div id="tableWrap" class="hidden" style="overflow-x:auto;">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>약속 이름</th>
+                        <th>공유 코드</th>
+                        <th>멤버</th>
+                        <th>후보 날짜</th>
+                        <th>생성일</th>
+                        <th>관리</th>
+                    </tr>
+                </thead>
+                <tbody id="scheduleTableBody"></tbody>
+            </table>
+        </div>
+
+        <div id="emptyMsg" class="empty-message hidden">등록된 약속이 없습니다</div>
+    </main>
+
+    <!-- 수정 모달 -->
+    <div class="edit-modal" id="editModal">
+        <div class="edit-modal-box">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;">
+                <h2 style="font-size:1.2rem;font-weight:700;">약속 수정</h2>
+                <button class="modal-close" onclick="closeEditModal()">✕</button>
+            </div>
+
+            <input type="hidden" id="editScheduleId">
+
+            <div class="form-group">
+                <label>약속 이름</label>
+                <input type="text" id="editTitle" class="form-control" placeholder="약속 이름">
+            </div>
+
+            <hr class="section-divider">
+
+            <div class="form-group">
+                <label>멤버 목록</label>
+                <div id="editMembersContainer"></div>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="addEditMember()" style="margin-top:0.5rem;">+ 멤버 추가</button>
+            </div>
+
+            <hr class="section-divider">
+
+            <div style="display:flex;gap:0.75rem;">
+                <button class="btn btn-primary" style="flex:1;" onclick="saveEdit()">저장</button>
+                <button class="btn btn-secondary" style="flex:1;" onclick="closeEditModal()">취소</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast hidden"></div>
+
+    <script>
+        const API = '/api';
+
+        $(document).ready(function() { loadSchedules(); });
+
+        function loadSchedules() {
+            $('#loadingMsg').show();
+            $('#tableWrap, #emptyMsg').addClass('hidden');
+
+            $.ajax({
+                url: API + '/schedule/all',
+                method: 'GET',
+                success: function(res) {
+                    $('#loadingMsg').hide();
+                    if (!res.success || res.data.length === 0) {
+                        $('#emptyMsg').removeClass('hidden');
+                        return;
+                    }
+                    renderTable(res.data);
+                    $('#tableWrap').removeClass('hidden');
+                },
+                error: function() {
+                    $('#loadingMsg').text('불러오기 실패');
+                }
+            });
+        }
+
+        function renderTable(list) {
+            const tbody = $('#scheduleTableBody');
+            tbody.empty();
+            list.forEach(function(s) {
+                const members = (s.members || []).map(function(m) {
+                    return '<span class="badge">' + esc(m) + '</span>';
+                }).join('');
+
+                const dates = (s.dates || []).map(function(d) {
+                    return '<span class="badge" style="background:var(--success-light);color:var(--success);">' + fmtDate(d.date) + '</span>';
+                }).join('');
+
+                const createdAt = s.createdAt ? s.createdAt.substring(0, 10) : '-';
+                const voteUrl = window.location.origin + '/vote.html?code=' + s.shareCode;
+
+                tbody.append(
+                    '<tr>' +
+                        '<td style="color:var(--gray-400);font-size:0.85rem;">#' + s.scheduleId + '</td>' +
+                        '<td style="font-weight:600;">' + esc(s.title) + '</td>' +
+                        '<td class="code-cell">' +
+                            '<span onclick="copyText(\'' + esc(voteUrl) + '\')" style="cursor:pointer;" title="클릭하여 링크 복사">' +
+                                s.shareCode + ' 🔗' +
+                            '</span>' +
+                        '</td>' +
+                        '<td><div class="badge-list">' + (members || '<span style="color:var(--gray-400);">없음</span>') + '</div></td>' +
+                        '<td><div class="badge-list">' + (dates || '<span style="color:var(--gray-400);">없음</span>') + '</div></td>' +
+                        '<td style="color:var(--gray-400);font-size:0.85rem;">' + createdAt + '</td>' +
+                        '<td>' +
+                            '<button class="btn btn-primary btn-sm" onclick="openEditModal(' + JSON.stringify(s).replace(/"/g, '&quot;') + ')">수정</button>' +
+                        '</td>' +
+                    '</tr>'
+                );
+            });
+        }
+
+        /* ---- 수정 모달 ---- */
+
+        function openEditModal(schedule) {
+            $('#editScheduleId').val(schedule.scheduleId);
+            $('#editTitle').val(schedule.title);
+
+            const container = $('#editMembersContainer');
+            container.empty();
+            (schedule.members || []).forEach(function(name) {
+                container.append(makeMemberRow(name));
+            });
+
+            $('#editModal').addClass('open');
+        }
+
+        function closeEditModal() {
+            $('#editModal').removeClass('open');
+        }
+
+        function makeMemberRow(name) {
+            return '<div class="member-edit-row">' +
+                '<input type="text" class="edit-member-input" value="' + esc(name) + '" placeholder="이름">' +
+                '<button type="button" class="btn btn-danger btn-sm" onclick="removeEditMember(this)">삭제</button>' +
+            '</div>';
+        }
+
+        function addEditMember() {
+            $('#editMembersContainer').append(makeMemberRow(''));
+            $('#editMembersContainer .edit-member-input:last').focus();
+        }
+
+        function removeEditMember(btn) {
+            if ($('.edit-member-input').length > 1) {
+                $(btn).parent().remove();
+            } else {
+                showToast('멤버는 최소 1명이어야 합니다', 'error');
+            }
+        }
+
+        function saveEdit() {
+            const id = $('#editScheduleId').val();
+            const title = $('#editTitle').val().trim();
+            if (!title) { showToast('약속 이름을 입력해주세요', 'error'); return; }
+
+            const members = [];
+            $('.edit-member-input').each(function() {
+                const v = $(this).val().trim();
+                if (v) members.push(v);
+            });
+            if (members.length === 0) { showToast('멤버를 최소 1명 입력해주세요', 'error'); return; }
+
+            $.ajax({
+                url: API + '/schedule/' + id,
+                method: 'PUT',
+                contentType: 'application/json',
+                data: JSON.stringify({ title, members }),
+                success: function(res) {
+                    if (res.success) {
+                        showToast('수정되었습니다', 'success');
+                        closeEditModal();
+                        loadSchedules();
+                    }
+                },
+                error: function(xhr) {
+                    showToast(xhr.responseJSON?.message || '수정 실패', 'error');
+                }
+            });
+        }
+
+        /* ---- 유틸 ---- */
+
+        function fmtDate(dateString) {
+            if (!dateString) return '';
+            const d = new Date(dateString + 'T00:00:00');
+            return d.toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' });
+        }
+
+        function esc(str) {
+            return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }
+
+        function copyText(text) {
+            navigator.clipboard.writeText(text).then(function() {
+                showToast('링크가 복사되었습니다', 'success');
+            });
+        }
+
+        function showToast(msg, type) {
+            const t = $('#toast');
+            t.text(msg).removeClass('hidden success error').addClass(type || 'info');
+            setTimeout(function() { t.addClass('hidden'); }, 3000);
+        }
+
+        /* 모달 바깥 클릭 닫기 */
+        $('#editModal').on('click', function(e) {
+            if ($(e.target).is('#editModal')) closeEditModal();
+        });
+    </script>
+</body>
+</html>

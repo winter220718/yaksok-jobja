@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>약속 잡기</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-brand">📅 약속 잡기</div>
+    </nav>
+
+    <div class="hero">
+        <div class="hero-title">모두가 되는 날, 한번에 찾기</div>
+        <div class="hero-subtitle">약속을 만들고 링크를 공유하면 멤버들이 가능한 날짜에 투표할 수 있어요</div>
+    </div>
+
+    <main class="main-content">
+
+        <!-- 약속 만들기 폼 -->
+        <div id="createSection" class="card">
+            <div class="section-title">✏️ 새 약속 만들기</div>
+
+            <div class="form-group">
+                <label for="scheduleTitle">약속 이름</label>
+                <input type="text" id="scheduleTitle" class="form-control" placeholder="예: 밴드 합주, 생일 파티, 정기 모임">
+            </div>
+
+            <div class="form-group">
+                <label>멤버 이름</label>
+                <div id="membersContainer" class="dates-container">
+                    <div class="date-input-group">
+                        <input type="text" class="form-control member-input" placeholder="이름 입력">
+                        <button type="button" class="btn btn-danger btn-sm" onclick="removeMember(this)">삭제</button>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="addMember()" style="margin-top:0.5rem;">+ 멤버 추가</button>
+            </div>
+
+            <div class="form-group">
+                <label>후보 날짜</label>
+                <div id="datesContainer" class="dates-container">
+                    <div class="date-input-group">
+                        <input type="date" class="date-input" required>
+                        <button type="button" class="btn btn-danger btn-sm" onclick="removeDate(this)">삭제</button>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="addDate()" style="margin-top:0.5rem;">+ 날짜 추가</button>
+            </div>
+
+            <button class="btn btn-primary btn-lg" onclick="createSchedule()">약속 만들기</button>
+        </div>
+
+        <!-- 완료 후 링크 공유 -->
+        <div id="resultSection" class="hidden" style="margin-top:1.5rem;">
+            <div class="card" style="text-align:center;">
+                <div style="font-size:3rem;margin-bottom:1rem;">🎉</div>
+                <div class="section-title" style="justify-content:center;">약속이 만들어졌어요!</div>
+                <p style="color:var(--gray-600);margin-bottom:1.5rem;">아래 링크를 멤버들에게 공유하세요</p>
+
+                <div style="background:var(--gray-50);border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);padding:1rem;margin-bottom:1rem;font-family:monospace;font-size:0.95rem;color:var(--primary);word-break:break-all;" id="shareUrlDisplay"></div>
+
+                <div style="display:flex;gap:0.75rem;justify-content:center;flex-wrap:wrap;">
+                    <button class="btn btn-primary" onclick="copyShareLink()">🔗 링크 복사</button>
+                    <button class="btn btn-secondary" onclick="goToVotePage()">투표 페이지 열기</button>
+                    <button class="btn btn-secondary" onclick="resetForm()">새 약속 만들기</button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <div id="toast" class="toast hidden"></div>
+    <script src="/js/app.js"></script>
+    <script src="/js/admin-shortcut.js"></script>
+</body>
+</html>

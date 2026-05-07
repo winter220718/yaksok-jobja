@@ -1,42 +1,27 @@
 services:
   - type: web
-    name: schedule-vote
+    name: yaksok-jobja
     runtime: docker
     region: singapore
     plan: free
-
-    /* 환경 변수 */
+    healthCheckPath: /actuator/health
     envVars:
       - key: SPRING_PROFILES_ACTIVE
         value: prod
-
-      - key: DATABASE_URL
+      - key: DB_URL
         fromDatabase:
-          name: schedule-vote-db
-          property: connectionString
-
-      - key: DATABASE_USER
+          name: yaksok-db
+          property: jdbcUrl
+      - key: DB_USERNAME
         fromDatabase:
-          name: schedule-vote-db
+          name: yaksok-db
           property: user
-
-      - key: DATABASE_PASSWORD
+      - key: DB_PASSWORD
         fromDatabase:
-          name: schedule-vote-db
+          name: yaksok-db
           property: password
 
-      - key: JWT_SECRET_KEY
-        generateValue: true
-
-      - key: JWT_EXPIRATION_MS
-        value: "86400000"
-
-      - key: PORT
-        value: "8080"
-
-/* 데이터베이스 - Azure SQL 또는 외부 MSSQL 사용 */
 databases:
-  - name: schedule-vote-db
-    engine: mssql
-    version: "2019"
+  - name: yaksok-db
     plan: free
+    databaseName: yaksok

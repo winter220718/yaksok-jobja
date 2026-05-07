@@ -8,28 +8,15 @@ services:
     envVars:
       - key: SPRING_PROFILES_ACTIVE
         value: prod
-      - key: DB_HOST
-        fromDatabase:
-          name: yaksok-db
-          property: host
-      - key: DB_PORT
-        fromDatabase:
-          name: yaksok-db
-          property: port
-      - key: DB_NAME
-        fromDatabase:
-          name: yaksok-db
-          property: database
+      - key: DB_URL
+        sync: false
       - key: DB_USERNAME
-        fromDatabase:
-          name: yaksok-db
-          property: user
+        sync: false
       - key: DB_PASSWORD
-        fromDatabase:
-          name: yaksok-db
-          property: password
+        sync: false
 
 databases:
   - name: yaksok-db
     plan: free
+    region: singapore
     databaseName: yaksok

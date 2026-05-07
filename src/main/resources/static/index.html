@@ -40,6 +40,28 @@
             </div>
 
             <div class="form-group">
+                <label>멤버 투표 방식</label>
+                <div class="vote-mode-options">
+                    <label class="vote-mode-option">
+                        <input type="radio" name="voteMode" value="RESTRICTED" checked onchange="onVoteModeChange()">
+                        <div class="vote-mode-card">
+                            <div class="vote-mode-icon">📅</div>
+                            <div class="vote-mode-label">선택한 날짜만</div>
+                            <div class="vote-mode-desc">내가 고른 후보 날짜 중에서만 투표 가능</div>
+                        </div>
+                    </label>
+                    <label class="vote-mode-option">
+                        <input type="radio" name="voteMode" value="FREE" onchange="onVoteModeChange()">
+                        <div class="vote-mode-card">
+                            <div class="vote-mode-icon">🗓️</div>
+                            <div class="vote-mode-label">전체 날짜 선택 가능</div>
+                            <div class="vote-mode-desc">멤버가 달력에서 가능한 날짜를 자유롭게 선택</div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <div id="candidateDatesSection" class="form-group">
                 <label>후보 날짜</label>
                 <div class="cal-widget" id="adminCalWidget">
                     <div class="cal-header">

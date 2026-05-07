@@ -1,15 +1,19 @@
 package com.schedule.service;
 
+import com.schedule.dto.FreeVoteRequest;
 import com.schedule.dto.UserResponseRequest;
 import com.schedule.dto.VoteResultResponse;
 import com.schedule.entity.ScheduleDateEntity;
+import com.schedule.entity.ScheduleEntity;
 import com.schedule.entity.UserResponseEntity;
 import com.schedule.repository.ScheduleDateRepository;
+import com.schedule.repository.ScheduleRepository;
 import com.schedule.repository.UserResponseRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -20,6 +24,7 @@ public class VoteService {
 
     private final UserResponseRepository userResponseRepository;
     private final ScheduleDateRepository scheduleDateRepository;
+    private final ScheduleRepository scheduleRepository;
 
     /* 사용자 응답 저장 또는 업데이트 */
     @Transactional
@@ -99,6 +104,35 @@ public class VoteService {
         response.setRecommendedDate(recommendedDate);
 
         return response;
+    }
+
+    /* FREE 모드: 멤버가 가능한 날짜 목록으로 한번에 제출 */
+    @Transactional
+    public void submitFreeResponse(FreeVoteRequest request) {
+        ScheduleEntity schedule = scheduleRepository.findById(request.getScheduleId())
+            .orElseThrow(() -> new IllegalArgumentException("약속을 찾을 수 없습니다"));
+
+        userResponseRepository.deleteByScheduleIdAndUserName(request.getScheduleId(), request.getUserName());
+
+        if (request.getAvailableDates() == null) return;
+
+        for (LocalDate date : request.getAvailableDates()) {
+            ScheduleDateEntity dateEntity = scheduleDateRepository
+                .findByScheduleScheduleIdAndCandidateDate(request.getScheduleId(), date)
+                .orElseGet(() -> {
+                    ScheduleDateEntity newDate = new ScheduleDateEntity();
+                    newDate.setSchedule(schedule);
+                    newDate.setCandidateDate(date);
+                    newDate.setCreatedAt(LocalDateTime.now());
+                    return scheduleDateRepository.save(newDate);
+                });
+
+            UserResponseEntity response = new UserResponseEntity();
+            response.setScheduleDate(dateEntity);
+            response.setUserName(request.getUserName());
+            response.setIsAvailable(true);
+            userResponseRepository.save(response);
+        }
     }
 
     /* 날짜별 가능한 응답 개수 */

@@ -12,4 +12,5 @@ public class ScheduleCreateRequest {
     private String title;
     private List<String> members;
     private List<LocalDate> dates;
+    private String voteMode; /* RESTRICTED | FREE */
 }

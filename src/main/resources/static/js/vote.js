@@ -3,6 +3,9 @@ let currentSchedule = null;
 let selectedMember = null;
 let availableDates = new Set();
 
+/* FREE 모드 달력 상태 */
+let freeCalYear, freeCalMonth;
+
 $(document).ready(function() {
     const code = getURLParam('code');
     if (!code) {
@@ -75,7 +78,14 @@ function selectMember(name) {
     $('#voteTitleDisplay').text(currentSchedule.title);
     $('#voteNameDisplay').text(name + '님의 투표');
 
-    renderVoteCalendars();
+    if (currentSchedule.voteMode === 'FREE') {
+        const now = new Date();
+        freeCalYear = now.getFullYear();
+        freeCalMonth = now.getMonth();
+        renderFreeCalendar();
+    } else {
+        renderVoteCalendars();
+    }
 
     $('#memberSelectSection').addClass('hidden');
     $('#resultSection').addClass('hidden');
@@ -88,6 +98,85 @@ function backToMemberSelect() {
     $('#voteSection').addClass('hidden');
     $('#resultSection').addClass('hidden');
     $('#memberSelectSection').removeClass('hidden');
+}
+
+/* ======================================
+   FREE 모드 달력 (자유 날짜 선택)
+   ====================================== */
+
+function renderFreeCalendar() {
+    const container = $('#voteCalendars');
+    container.empty();
+
+    const title = freeCalYear + '년 ' + (freeCalMonth + 1) + '월';
+    const firstDay = new Date(freeCalYear, freeCalMonth, 1).getDay();
+    const daysInMonth = new Date(freeCalYear, freeCalMonth + 1, 0).getDate();
+    const prevDays = new Date(freeCalYear, freeCalMonth, 0).getDate();
+    const todayStr = formatDateStr(new Date());
+
+    const weekdaysHtml = ['일','월','화','수','목','금','토'].map(function(d) {
+        return '<div class="cal-weekday">' + d + '</div>';
+    }).join('');
+
+    let cells = '';
+    for (let i = firstDay - 1; i >= 0; i--) {
+        cells += '<div class="cal-cell"><div class="cal-day other-month">' + (prevDays - i) + '</div></div>';
+    }
+    for (let d = 1; d <= daysInMonth; d++) {
+        const ds = freeCalYear + '-' + pad2(freeCalMonth + 1) + '-' + pad2(d);
+        const isAvail = availableDates.has(ds);
+        const isToday = ds === todayStr;
+        let cls = 'cal-day ';
+        if (isAvail) {
+            cls += 'available';
+        } else if (isToday) {
+            cls += 'today selectable';
+        } else {
+            cls += 'selectable';
+        }
+        cells += '<div class="cal-cell"><div class="' + cls + '" onclick="toggleVoteDate(\'' + ds + '\')">' + d + '</div></div>';
+    }
+    const total = firstDay + daysInMonth;
+    const remaining = total % 7 === 0 ? 0 : 7 - (total % 7);
+    for (let d = 1; d <= remaining; d++) {
+        cells += '<div class="cal-cell"><div class="cal-day other-month">' + d + '</div></div>';
+    }
+
+    const selectedCount = availableDates.size;
+    const countHtml = selectedCount > 0
+        ? '<div style="text-align:center;margin-top:0.75rem;font-size:0.85rem;color:var(--success);font-weight:600;">' + selectedCount + '개 날짜 선택됨</div>'
+        : '<div style="text-align:center;margin-top:0.75rem;font-size:0.85rem;color:var(--gray-400);">가능한 날짜를 클릭하세요</div>';
+
+    container.html(
+        '<div class="vote-month-block">' +
+            '<div class="cal-widget">' +
+                '<div class="cal-header">' +
+                    '<button type="button" class="cal-nav-btn" onclick="freePrevMonth()">&#8249;</button>' +
+                    '<div class="cal-header-title">' + title + '</div>' +
+                    '<button type="button" class="cal-nav-btn" onclick="freeNextMonth()">&#8250;</button>' +
+                '</div>' +
+                '<div class="cal-weekdays">' + weekdaysHtml + '</div>' +
+                '<div class="cal-grid">' + cells + '</div>' +
+            '</div>' +
+            countHtml +
+        '</div>'
+    );
+}
+
+function freePrevMonth() {
+    freeCalMonth--;
+    if (freeCalMonth < 0) { freeCalMonth = 11; freeCalYear--; }
+    renderFreeCalendar();
+}
+
+function freeNextMonth() {
+    freeCalMonth++;
+    if (freeCalMonth > 11) { freeCalMonth = 0; freeCalYear++; }
+    renderFreeCalendar();
+}
+
+function formatDateStr(d) {
+    return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
 }
 
 /* ======================================
@@ -163,7 +252,11 @@ function toggleVoteDate(ds) {
     } else {
         availableDates.add(ds);
     }
-    renderVoteCalendars();
+    if (currentSchedule.voteMode === 'FREE') {
+        renderFreeCalendar();
+    } else {
+        renderVoteCalendars();
+    }
 }
 
 /* ======================================
@@ -172,6 +265,27 @@ function toggleVoteDate(ds) {
 
 function submitVotes() {
     if (!selectedMember) return;
+
+    if (currentSchedule.voteMode === 'FREE') {
+        $.ajax({
+            url: API_BASE_URL + '/vote/submit-free',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                scheduleId: currentSchedule.scheduleId,
+                userName: selectedMember,
+                availableDates: Array.from(availableDates).sort()
+            }),
+            success: function() {
+                showToast('투표가 완료되었습니다!', 'success');
+                loadAndShowResults();
+            },
+            error: function() {
+                showToast('투표 제출에 실패했습니다', 'error');
+            }
+        });
+        return;
+    }
 
     const requests = currentSchedule.dates.map(function(dateInfo) {
         return $.ajax({

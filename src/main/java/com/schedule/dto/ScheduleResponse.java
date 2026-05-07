@@ -13,6 +13,7 @@ public class ScheduleResponse {
     private Integer scheduleId;
     private String title;
     private String shareCode;
+    private String voteMode;
     private List<String> members;
     private List<DateInfo> dates;
     private String createdAt;

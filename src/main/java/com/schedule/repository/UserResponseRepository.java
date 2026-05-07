@@ -29,4 +29,12 @@ public interface UserResponseRepository extends JpaRepository<UserResponseEntity
            "WHERE ur.scheduleDate.schedule.scheduleId = :scheduleId " +
            "ORDER BY ur.scheduleDate.candidateDate, ur.userName")
     List<UserResponseEntity> findByScheduleId(@Param("scheduleId") Integer scheduleId);
+
+    /* FREE 모드 재투표시 기존 응답 삭제 */
+    @Query("DELETE FROM UserResponseEntity ur " +
+           "WHERE ur.scheduleDate.schedule.scheduleId = :scheduleId " +
+           "AND ur.userName = :userName")
+    @org.springframework.data.jpa.repository.Modifying
+    void deleteByScheduleIdAndUserName(@Param("scheduleId") Integer scheduleId,
+                                       @Param("userName") String userName);
 }

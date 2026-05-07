@@ -34,6 +34,9 @@ public class ScheduleEntity {
     @OneToMany(mappedBy = "schedule", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ScheduleMemberEntity> members;
 
+    @Column(name = "VOTE_MODE", nullable = false, length = 20)
+    private String voteMode = "RESTRICTED"; /* RESTRICTED: 후보 날짜만, FREE: 전체 날짜 */
+
     @Column(name = "CREATED_AT", nullable = false, columnDefinition = "TIMESTAMP")
     private LocalDateTime createdAt;
 

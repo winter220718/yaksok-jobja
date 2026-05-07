@@ -34,6 +34,7 @@ public class ScheduleService {
         ScheduleEntity schedule = new ScheduleEntity();
         schedule.setTitle(request.getTitle());
         schedule.setShareCode(shareCode);
+        schedule.setVoteMode(request.getVoteMode() != null ? request.getVoteMode() : "RESTRICTED");
         schedule.setCreatedAt(LocalDateTime.now());
         schedule.setUpdatedAt(LocalDateTime.now());
 
@@ -140,6 +141,7 @@ public class ScheduleService {
         response.setScheduleId(schedule.getScheduleId());
         response.setTitle(schedule.getTitle());
         response.setShareCode(schedule.getShareCode());
+        response.setVoteMode(schedule.getVoteMode() != null ? schedule.getVoteMode() : "RESTRICTED");
         response.setMembers(members);
         response.setDates(dates);
         response.setCreatedAt(schedule.getCreatedAt().toString());

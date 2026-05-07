@@ -92,6 +92,17 @@ function updateSelectedDatesSummary() {
     });
 }
 
+function onVoteModeChange() {
+    const mode = $('input[name="voteMode"]:checked').val();
+    if (mode === 'FREE') {
+        $('#candidateDatesSection').addClass('hidden');
+        selectedDates = new Set();
+        renderAdminCalendar();
+    } else {
+        $('#candidateDatesSection').removeClass('hidden');
+    }
+}
+
 function calPrevMonth() {
     calMonth--;
     if (calMonth < 0) { calMonth = 11; calYear--; }
@@ -122,11 +133,13 @@ function createSchedule() {
     const dates = Array.from(selectedDates).sort();
     if (dates.length === 0) { showToast('후보 날짜를 최소 1개 선택해주세요', 'error'); return; }
 
+    const voteMode = $('input[name="voteMode"]:checked').val() || 'RESTRICTED';
+
     $.ajax({
         url: API_BASE_URL + '/schedule/create',
         method: 'POST',
         contentType: 'application/json',
-        data: JSON.stringify({ title, members, dates }),
+        data: JSON.stringify({ title, members, dates, voteMode }),
         success: function(res) {
             if (res.success) {
                 createdSchedule = res.data;
@@ -161,6 +174,8 @@ function resetForm() {
     $('#scheduleTitle').val('');
     resetMemberInputs();
     selectedDates = new Set();
+    $('input[name="voteMode"][value="RESTRICTED"]').prop('checked', true);
+    $('#candidateDatesSection').removeClass('hidden');
     renderAdminCalendar();
     createdSchedule = null;
 }

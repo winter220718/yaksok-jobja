@@ -1,5 +1,6 @@
 package com.schedule.controller;
 
+import com.schedule.dto.FreeVoteRequest;
 import com.schedule.dto.UserResponseRequest;
 import com.schedule.dto.VoteResultResponse;
 import com.schedule.service.VoteService;
@@ -29,6 +30,24 @@ public class VoteController {
             response.put("success", true);
             response.put("message", "투표가 저장되었습니다");
 
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
+
+    /* FREE 모드 투표 제출 */
+    @PostMapping("/submit-free")
+    public ResponseEntity<Map<String, Object>> submitFreeResponse(
+            @RequestBody FreeVoteRequest request) {
+        try {
+            voteService.submitFreeResponse(request);
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "투표가 저장되었습니다");
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             Map<String, Object> response = new HashMap<>();
